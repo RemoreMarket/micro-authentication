@@ -21,16 +21,7 @@ Funciones principales:
 ⚠️ Importante: Este servicio no guarda información personal (nombre, foto, bio).
 Solamente valida la identidad y emite eventos.
 
-Entidad Auth implícita (externa o en memoria):
 
-typescript
-Copy
-Edit
-type AuthUser {
-  id: UUID;              // ID único del usuario
-  email: string;         // Identificador principal para autenticación
-  password?: string;     // Hash de contraseña (si no es OAuth)
-}
 Refresh Tokens (Redis):
 
 Key	Value	TTL
@@ -95,6 +86,7 @@ this.client.emit('user.created', {
   id: 'uuid',
   email: 'user@mail.com',
   fullName: 'John Doe',
+  ....
 });
 El user-service escucha el evento y crea el usuario.
 
@@ -109,7 +101,7 @@ Razón	Beneficio
 diff
 Copy
 Edit
-Mobile App 📱
+Mobile App 
     │
     │ GraphQL (Apollo Client)
     ▼
@@ -117,14 +109,6 @@ Apollo Gateway 🌐 (Federation)
     ├───────────┬───────────┐
     ▼           ▼           ▼
 [ auth-service ]      [ user-service ]
-- Login/Register       - Perfil del usuario
-- Tokens (JWT)         - Nombre, foto, bio
-- OAuth                - Roles y datos personales
-- Redis (Refresh)      - Dataloader para batch users
-📝 Notas adicionales:
 
-Mantén actualizado este README junto con cambios en el microservicio.
 
-Comunica claramente cualquier cambio importante al resto del equipo.
 
-✨ Happy coding!
