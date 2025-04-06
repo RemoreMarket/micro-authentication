@@ -63,3 +63,53 @@ Redis: para refresh tokens y sesiones temporales
 Apollo Federation: para exponer el auth a través del gateway unificado
 
 Guards: para proteger rutas usando JWT
+
+Comunicación entre auth-service y user-service
+Vía Apollo Federation:
+auth-service implementa una parte del tipo User (resolver federado)
+
+user-service es el owner del User real
+
+Desde el gateway, se resuelve automáticamente:
+
+query {
+  me {
+    id
+    fullName
+    profilePicture
+  }
+}
+Vía Eventos (NATS o interno):
+Cuando un usuario se registra en auth-service, este emite un evento:
+
+this.client.emit('user.created', {
+  id: 'uuid',
+  email: 'user@mail.com',
+  fullName: 'John',
+});
+Y user-service escucha ese evento y guarda al usuario en su base de datos.
+
+🎯 ¿Por qué están separados?
+Separar auth-service y user-service tiene ventajas muy claras:
+
+Razón	Beneficio
+Separación de responsabilidades	Código más limpio y seguro
+Seguridad	auth-service maneja tokens sin exponer datos personales
+Escalabilidad	Puedes escalar user-service o auth según necesidad
+Modularidad	Puedes reemplazar auth-service con Auth0 o Keycloak
+Federación y rendimiento	Carga más rápida y resoluciones optimizadas
+✅ Resumen Visual Simplificado
+Mobile App
+    |
+    | GraphQL (Apollo Client)
+    v
+[ Gateway - Apollo Federation ]
+    |
+    |-----------------------------|
+    |                             |
+    v                             v
+[ auth-service ]           [ user-service ]
+  - Login/Register           - Perfil del usuario
+  - Tokens                   - Foto, nombre, bio
+  - OAuth                    - Roles y actualizaciones
+  - Redis refresh            - Dataloader para batch de usuarios
