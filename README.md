@@ -1,38 +1,42 @@
-# micro-authentication
-📌 Rol
-Gestiona toda la lógica de identidad, autenticación y autorización, incluyendo:
 
-Registro
+🔐 Micro-Authentication Service
+Gestiona toda la lógica de identidad, autenticación y autorización del sistema.
 
-Login
+📌 Rol del Servicio
+Este servicio maneja únicamente acceso e identidad. No almacena información personal del usuario como nombre o fotos, solo se enfoca en seguridad y autenticación.
 
-Refresh tokens
+Funciones principales:
 
-Login social (OAuth con Google, Facebook, Apple)
+✅ Registro y Login
 
-Seguridad con JWT, Redis y Guards
+🔄 Refresh tokens
 
-Envío de eventos a otros servicios (como user-service)
+🌐 OAuth Login Social (Google, Facebook, Apple)
 
-📦 Modelo de Datos del auth-service
-¡Importante!: Este microservicio no guarda datos del usuario final como nombre o foto, solo se encarga del acceso.
+🛡️ Seguridad robusta con JWT, Redis y Guards
 
-Entidad implícita (en memoria o externa): Usuario Auth
-{
-  id: UUID,            // UUID del usuario
-  email: string,       // Clave principal para autenticación
-  password: string,    // Hash de contraseña (solo si no es OAuth)
+📤 Eventos hacia otros microservicios (user-service)
+
+📦 Modelo de Datos (Simplificado)
+⚠️ Importante: Este servicio no guarda información personal (nombre, foto, bio).
+Solamente valida la identidad y emite eventos.
+
+Entidad Auth implícita (externa o en memoria):
+
+typescript
+Copy
+Edit
+type AuthUser {
+  id: UUID;              // ID único del usuario
+  email: string;         // Identificador principal para autenticación
+  password?: string;     // Hash de contraseña (si no es OAuth)
 }
-En realidad, esta entidad no se guarda aquí. Se valida con JWT y se sincroniza con user-service.
+Refresh Tokens (Redis):
 
-Refresh Tokens en Redis
-Estructura almacenada:
-
-Key: refresh:<user_id>
-Value: <refresh_token>
-TTL: 7 días
-🧠 APIs y Operaciones (GraphQL)
-Mutations:
+Key	Value	TTL
+refresh:<user_id>	<refresh_token>	7 días
+🚀 APIs y Operaciones GraphQL
+🧩 Mutations
 register(email, password, fullName): AuthPayload
 
 login(email, password): AuthPayload
@@ -41,37 +45,38 @@ refreshToken(token): AuthPayload
 
 logout(): Boolean
 
-loginWithGoogle(), etc.
+loginWithGoogle(), loginWithFacebook(), loginWithApple()
 
-Queries:
-me: User (verifica token actual y pide datos a user-service)
+🔍 Queries
+me: User – verifica token actual y obtiene información desde user-service.
 
-✅ ¿Por qué usar GraphQL aquí?
-Porque los clientes móviles necesitan control preciso sobre los datos que consultan.
+¿Por qué usar GraphQL aquí?
 
-Permite unificar login, me, refreshToken en un mismo endpoint.
+📱 Clientes móviles necesitan control granular sobre datos.
 
-Apollo Federation permite que este servicio sea parte de un super esquema.
+🎯 Único endpoint para login, me, refreshToken.
 
-⚙️ Tecnologías Clave
-NestJS + GraphQL: arquitectura escalable y declarativa
+🌐 Apollo Federation permite un esquema federado entre múltiples servicios.
 
-Passport.js: integración con OAuth
-
-Redis: para refresh tokens y sesiones temporales
-
-Apollo Federation: para exponer el auth a través del gateway unificado
-
-Guards: para proteger rutas usando JWT
-
-Comunicación entre auth-service y user-service
+🛠️ Stack Tecnológico Clave
+Tecnología	Rol
+NestJS + GraphQL	Arquitectura escalable y declarativa
+Passport.js	OAuth y social login
+Redis	Gestión segura de refresh tokens
+Apollo Federation	Gateway federado unificado
+JWT & Guards	Protección robusta de endpoints
+🛰️ Comunicación con user-service
 Vía Apollo Federation:
-auth-service implementa una parte del tipo User (resolver federado)
 
-user-service es el owner del User real
+Implementa resolvers federados parciales del tipo User.
 
-Desde el gateway, se resuelve automáticamente:
+user-service es dueño y fuente principal de los datos personales.
 
+Resolución automática desde gateway:
+
+graphql
+Copy
+Edit
 query {
   me {
     id
@@ -80,36 +85,46 @@ query {
   }
 }
 Vía Eventos (NATS o interno):
-Cuando un usuario se registra en auth-service, este emite un evento:
 
+Al registrarse un usuario nuevo, emite:
+
+typescript
+Copy
+Edit
 this.client.emit('user.created', {
   id: 'uuid',
   email: 'user@mail.com',
-  fullName: 'John',
+  fullName: 'John Doe',
 });
-Y user-service escucha ese evento y guarda al usuario en su base de datos.
+El user-service escucha el evento y crea el usuario.
 
-🎯 ¿Por qué están separados?
-Separar auth-service y user-service tiene ventajas muy claras:
-
+🎯 Ventajas de Separar Servicios (auth vs. user)
 Razón	Beneficio
-Separación de responsabilidades	Código más limpio y seguro
-Seguridad	auth-service maneja tokens sin exponer datos personales
-Escalabilidad	Puedes escalar user-service o auth según necesidad
-Modularidad	Puedes reemplazar auth-service con Auth0 o Keycloak
-Federación y rendimiento	Carga más rápida y resoluciones optimizadas
-✅ Resumen Visual Simplificado
-Mobile App
-    |
-    | GraphQL (Apollo Client)
-    v
-[ Gateway - Apollo Federation ]
-    |
-    |-----------------------------|
-    |                             |
-    v                             v
-[ auth-service ]           [ user-service ]
-  - Login/Register           - Perfil del usuario
-  - Tokens                   - Foto, nombre, bio
-  - OAuth                    - Roles y actualizaciones
-  - Redis refresh            - Dataloader para batch de usuarios
+📦 Separación de responsabilidades	Código más limpio, fácil de mantener y seguro
+🔐 Seguridad	Gestión segura y aislamiento de tokens
+🚀 Escalabilidad	Escala cada servicio según necesidad
+🧩 Modularidad	Fácilmente sustituible por Auth0, Keycloak
+⚡ Federación y rendimiento	Carga optimizada y rápida en clientes
+🌟 Diagrama Visual Simplificado
+diff
+Copy
+Edit
+Mobile App 📱
+    │
+    │ GraphQL (Apollo Client)
+    ▼
+Apollo Gateway 🌐 (Federation)
+    ├───────────┬───────────┐
+    ▼           ▼           ▼
+[ auth-service ]      [ user-service ]
+- Login/Register       - Perfil del usuario
+- Tokens (JWT)         - Nombre, foto, bio
+- OAuth                - Roles y datos personales
+- Redis (Refresh)      - Dataloader para batch users
+📝 Notas adicionales:
+
+Mantén actualizado este README junto con cambios en el microservicio.
+
+Comunica claramente cualquier cambio importante al resto del equipo.
+
+✨ Happy coding!
