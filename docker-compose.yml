@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  auth-service:
+    container_name: auth-service
+    build:
+      context: .
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+    command: npm run start
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
