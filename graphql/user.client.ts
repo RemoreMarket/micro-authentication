@@ -14,6 +14,8 @@ export const createUserMutation = gql`
     createUser(input: $input) {
       id
       email
+      name
+      phone
     }
   }
 `;

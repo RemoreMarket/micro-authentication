@@ -5,12 +5,14 @@ export class LoginInput {
   @Field() email: string;
   @Field() password: string;
 }
-
 @InputType()
 export class RegisterInput {
   @Field() email: string;
   @Field() password: string;
+  @Field() name: string;
+  @Field() phone: string; // nuevo campo obligatorio
 }
+
 
 @ObjectType()
 export class Tokens {

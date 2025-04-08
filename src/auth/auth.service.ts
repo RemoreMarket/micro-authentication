@@ -28,10 +28,13 @@ export class AuthService {
         input: {
           id: userId,
           email: input.email,
+          name: input.name,
+          phone: input.phone, // nuevo
+          password: hashedPassword, // si user-service lo almacena
         },
       },
     });
-
+    
     const tokens = await this.getTokens(userId, input.email);
     await this.updateRefreshToken(userId, tokens.refresh_token);
     await this.email.sendWelcomeEmail(input.email);
