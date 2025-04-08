@@ -1,114 +1,44 @@
+🧠 Primero: Visión General del auth-service con Apollo Federation
+🔗 ¿Cómo funciona auth-service?
+El microservicio auth-service es responsable de:
 
-🔐 Micro-Authentication Service
-Gestiona toda la lógica de identidad, autenticación y autorización del sistema.
+Registro (register)
 
-📌 Rol del Servicio
-Este servicio maneja únicamente acceso e identidad. No almacena información personal del usuario como nombre o fotos, solo se enfoca en seguridad y autenticación.
+Login (login)
 
-Funciones principales:
+Logout (logout)
 
-✅ Registro y Login
+Refresh de tokens (refreshTokens)
 
-🔄 Refresh tokens
+Soporte a login social (Google, Apple, Facebook)
 
-🌐 OAuth Login Social (Google, Facebook, Apple)
+Emitir eventos
 
-🛡️ Seguridad robusta con JWT, Redis y Guards
+Comunicar con user-service vía GraphQL para guardar usuarios
 
-📤 Eventos hacia otros microservicios (user-service)
+Usar Redis para tokens refresh
 
-📦 Modelo de Datos (Simplificado)
-⚠️ Importante: Este servicio no guarda información personal (nombre, foto, bio).
-Solamente valida la identidad y emite eventos.
+Usar Apollo Federation para integrarse en el Gateway GraphQL
 
+🔁 ¿Cómo usa Apollo Federation?
+Este servicio expone su propio schema GraphQL (usando @nestjs/graphql)
 
-Refresh Tokens (Redis):
+No define tipos federados directamente, pero invoca a un microservicio federado (user-service)
 
-Key	Value	TTL
-refresh:<user_id>	<refresh_token>	7 días
-🚀 APIs y Operaciones GraphQL
-🧩 Mutations
-register(email, password, fullName): AuthPayload
+Se conecta al Gateway vía ApolloGateway usando su URL (AUTH_SERVICE_URL)
 
-login(email, password): AuthPayload
+No requiere @extends ni @key aquí, pero sí puede tenerlos si expusiera User
 
-refreshToken(token): AuthPayload
+📡 ¿Y los eventos?
+Tiene un publisher de eventos (user-events.publisher.ts), actualmente para emitir:
 
-logout(): Boolean
+user.registered
 
-loginWithGoogle(), loginWithFacebook(), loginWithApple()
+user.social.login
 
-🔍 Queries
-me: User – verifica token actual y obtiene información desde user-service.
+En una versión avanzada puede integrarse con NATS/Kafka para emitir eventos de dominio
 
-¿Por qué usar GraphQL aquí?
+🧱 ¿Qué hace el middleware?
+roles.middleware.ts es un ejemplo de middleware que valida headers (como x-role)
 
-📱 Clientes móviles necesitan control granular sobre datos.
-
-🎯 Único endpoint para login, me, refreshToken.
-
-🌐 Apollo Federation permite un esquema federado entre múltiples servicios.
-
-🛠️ Stack Tecnológico Clave
-Tecnología	Rol
-NestJS + GraphQL	Arquitectura escalable y declarativa
-Passport.js	OAuth y social login
-Redis	Gestión segura de refresh tokens
-Apollo Federation	Gateway federado unificado
-JWT & Guards	Protección robusta de endpoints
-🛰️ Comunicación con user-service
-Vía Apollo Federation:
-
-Implementa resolvers federados parciales del tipo User.
-
-user-service es dueño y fuente principal de los datos personales.
-
-Resolución automática desde gateway:
-
-graphql
-Copy
-Edit
-query {
-  me {
-    id
-    fullName
-    profilePicture
-  }
-}
-Vía Eventos (NATS o interno):
-
-Al registrarse un usuario nuevo, emite:
-
-typescript
-Copy
-Edit
-this.client.emit('user.created', {
-  id: 'uuid',
-  email: 'user@mail.com',
-  fullName: 'John Doe',
-  ....
-});
-El user-service escucha el evento y crea el usuario.
-
-🎯 Ventajas de Separar Servicios (auth vs. user)
-Razón	Beneficio
-📦 Separación de responsabilidades	Código más limpio, fácil de mantener y seguro
-🔐 Seguridad	Gestión segura y aislamiento de tokens
-🚀 Escalabilidad	Escala cada servicio según necesidad
-🧩 Modularidad	Fácilmente sustituible por Auth0, Keycloak
-⚡ Federación y rendimiento	Carga optimizada y rápida en clientes
-🌟 Diagrama Visual Simplificado
-diff
-Copy
-Edit
-Mobile App 
-    │
-    │ GraphQL (Apollo Client)
-    ▼
-Apollo Gateway 🌐 (Federation)
-    ├───────────┬───────────┐
-    ▼           ▼           ▼
-[ auth-service ]      [ user-service ]
-
-
-
+Se puede usar en rutas específicas para restringir por rol (admin, user, etc.)
